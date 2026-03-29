@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Baza danych
+sports_calendar.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Środowiska wirtualne
+venv/
+env/
