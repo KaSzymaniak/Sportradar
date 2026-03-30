@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalendarz Sportowy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        nav {
+            background-color: #333;
+            color: white;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin-right: 20px;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .filter-section {
+            background: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .filter-section input,
+        .filter-section select {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .filter-section button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .filter-section button:hover {
+            background-color: #0056b3;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        table th {
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .status-played {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .status-scheduled {
+            color: orange;
+            font-weight: bold;
+        }
+        
+        .form-section {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .form-section h3 {
+            margin-top: 0;
+        }
+        
+        .form-section input,
+        .form-section select {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        
+        .form-section button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            width: 100%;
+        }
+        
+        .form-section button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <!-- Pasek nawigacji -->
+    <nav>
+        <a href="/">Sport Calendar</a>
+        <a href="#">Strona główna</a>
+        <a href="#">O nas</a>
+        <a href="#">Kontakt</a>
+    </nav>
+    
+    <div class="container">
+        <h1>Kalendarz Meczy Sportowych</h1>
+        
+        <!-- Sekcja filtrów -->
+        <div class="filter-section">
+            <h3>Filtry</h3>
+            <form id="filterForm">
+                <!-- Filtr po dacie -->
+                <input type="date" id="filterDate" placeholder="Filtruj po dacie">
+                
+                <!-- Przycisk wyczyszczenia -->
+                <button type="button" onclick="clearFilters()">Wyczyść filtry</button>
+            </form>
+        </div>
+        
+        <!-- Tabela meczy -->
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Godzina</th>
+                    <th>Sport</th>
+                    <th>Drużyna gospodarzy</th>
+                    <th>Drużyna gości</th>
+                    <th>Wynik</th>
+                    <th>Status</th>
+                    <th>Etap</th>
+                </tr>
+            </thead>
+            <tbody id="eventsTable">
+                <!-- Tutaj będą wyniki z API -->
+            </tbody>
+        </table>
+        
+        <!-- Sekcja dodawania nowego meczu -->
+        <div class="form-section">
+            <h3>Dodaj nowy mecz</h3>
+            <form id="addEventForm" onsubmit="addEvent(event)">
+                <input type="date" id="date" required placeholder="Data">
+                <input type="time" id="time" required placeholder="Godzina">
+                <input type="text" id="homeTeam" placeholder="Druzyna gospodarzy">
+                <input type="text" id="awayTeam" placeholder="Druzyna gosci">
+                <input type="number" id="homeGoals" placeholder="Gole gospodarzy" min="0" disabled>
+                <input type="number" id="awayGoals" placeholder="Gole gosci" min="0" disabled>
+                <select id="status" required onchange="toggleGoalsInput()">
+                    <option value="">-- Wybierz status --</option>
+                    <option value="played">Rozegrany</option>
+                    <option value="scheduled">Zaplanowany</option>
+                </select>
+                <button type="submit">Dodaj mecz</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Załaduj mecze przy starcie
+        function loadEvents() {
+            fetch('/events')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Nie udało się załadować meczy: ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(events => {
+                    const table = document.getElementById('eventsTable');
+                    table.innerHTML = '';
+                    
+                    // Filtruj po dacie jeśli użytkownik ja podal
+                    const filterDate = document.getElementById('filterDate').value;
+                    let filtered = events;
+                    
+                    if (filterDate) {
+                        filtered = events.filter(e => e.date === filterDate);
+                    }
+                    
+                    // Wyświetl każdy mecz w tabeli
+                    filtered.forEach(event => {
+                        const row = document.createElement('tr');
+                        const statusClass = event.status === 'played' ? 'status-played' : 'status-scheduled';
+                        const statusLabel = event.status === 'played' ? 'Rozegrany' : 'Zaplanowany';
+                        
+                        row.innerHTML = `
+                            <td>${event.date}</td>
+                            <td>${event.time}</td>
+                            <td>${event.competition}</td>
+                            <td>${event.home_team || 'N/A'}</td>
+                            <td>${event.away_team || 'N/A'}</td>
+                            <td>${event.home_goals !== null ? event.home_goals : '-'} : ${event.away_goals !== null ? event.away_goals : '-'}</td>
+                            <td><span class="${statusClass}">${statusLabel}</span></td>
+                            <td>${event.stage}</td>
+                        `;
+                        table.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Bląd załadowania meczy:', error);
+                    const table = document.getElementById('eventsTable');
+                    table.innerHTML = '<tr><td colspan="8">Błąd przy załadowaniu meczy: ' + error.message + '</td></tr>';
+                });
+        }
+        
+        // Dodaj nowy mecz
+        function addEvent(event) {
+            event.preventDefault();
+            
+            const formData = {
+                date_venue: document.getElementById('date').value,
+                time_venue_utc: document.getElementById('time').value,
+                home_team: document.getElementById('homeTeam').value || null,
+                away_team: document.getElementById('awayTeam').value || null,
+                home_goals: parseInt(document.getElementById('homeGoals').value) || null,
+                away_goals: parseInt(document.getElementById('awayGoals').value) || null,
+                status: document.getElementById('status').value,
+                season: new Date().getFullYear()
+            };
+            
+            fetch('/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Mecz dodany');
+                document.getElementById('addEventForm').reset();
+                loadEvents();
+            })
+            .catch(error => {
+                alert('Błąd przy dodawaniu meczu');
+                console.error('Error:', error);
+            });
+        }
+        
+        // Wyczyść filtry
+        function clearFilters() {
+            document.getElementById('filterDate').value = '';
+            loadEvents();
+        }
+        
+        // Pokazanie meczy tylko z wybranej daty
+        document.getElementById('filterDate').addEventListener('change', loadEvents);
+        
+        // Włacz lubwyłącz pola wyniku w zaleznosci od statusu
+        function toggleGoalsInput() {
+            const status = document.getElementById('status').value;
+            const homeGoals = document.getElementById('homeGoals');
+            const awayGoals = document.getElementById('awayGoals');
+            
+            if (status === 'scheduled') {
+                homeGoals.disabled = true;
+                awayGoals.disabled = true;
+                homeGoals.value = '';
+                awayGoals.value = '';
+            } else if (status === 'played') {
+                homeGoals.disabled = false;
+                awayGoals.disabled = false;
+            }
+        }
+        
+        // Załaduj mecze na starcie
+        loadEvents();
+    </script>
+</body>
+</html>
