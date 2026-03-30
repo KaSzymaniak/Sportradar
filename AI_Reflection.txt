@@ -1,0 +1,17 @@
+1. Database Design
+AI pomogło w zaproponowaniu konwencji nazewnictwa dla powiązań między tabelami.
+
+2. Data Processing
+AI pomogło w napisaniu zapytań do wstawienia danych do bazy danych.
+
+3. Backend (app.py)
+AI pomogło w implementacji LEFT JOINów zamiast pętli SQL oraz stworzeniu modelu do walidacji danych.
+
+4. Frontend (templates/index.html)
+AI pomogło w stylowaniu tabeli, formularza i interfejsu użytkownika.
+
+5. Weryfikacja i Poprawki
+AI wspierało cały projekt poprzez:
+- Stałe testowanie struktury kodu i zgodności z wymaganiami
+- Identyfikowanie i poprawę błędów 
+
